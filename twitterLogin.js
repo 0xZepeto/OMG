@@ -1,4 +1,8 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+// Aktifkan plugin stealth
+puppeteer.use(StealthPlugin());
 
 const loginTwitter = async (account, proxy) => {
   const { username, password } = account;
@@ -23,37 +27,36 @@ const loginTwitter = async (account, proxy) => {
   try {
     await page.goto(faucetUrl, { waitUntil: 'networkidle2' });
 
-    // Klik tombol login Twitter
+    // Klik tombol Login Twitter
     await page.waitForSelector('button[class*="chakra-button"]');
     await page.click('button[class*="chakra-button"]');
 
-    // Tunggu redirect ke halaman login Twitter
+    // Tunggu halaman login Twitter muncul
     await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
     // Isi username
-    await page.waitForSelector('input[name="text"]');
+    await page.waitForSelector('input[name="text"]', { timeout: 15000 });
     await page.type('input[name="text"]', username, { delay: 50 });
     await page.keyboard.press('Enter');
 
     await page.waitForTimeout(2000);
 
-    // Jika minta input password
+    // Isi password
     const passwordSelector = 'input[name="password"]';
     await page.waitForSelector(passwordSelector, { timeout: 10000 });
     await page.type(passwordSelector, password, { delay: 50 });
     await page.keyboard.press('Enter');
 
-    // Tunggu redirect ke faucet lagi
+    // Tunggu balik ke faucet
     await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
-    // Ambil oauth_token dan oauth_verifier dari URL
     const url = page.url();
     const urlParams = new URLSearchParams(url.split('?')[1]);
     const oauthToken = urlParams.get('oauth_token');
     const oauthVerifier = urlParams.get('oauth_verifier');
 
     if (!oauthToken || !oauthVerifier) {
-      throw new Error('Gagal mendapatkan OAuth token. Mungkin akun terkena checkpoint.');
+      throw new Error('Gagal mendapatkan OAuth token, mungkin akun terkena checkpoint.');
     }
 
     await browser.close();
@@ -66,4 +69,3 @@ const loginTwitter = async (account, proxy) => {
 };
 
 module.exports = { loginTwitter };
-  
